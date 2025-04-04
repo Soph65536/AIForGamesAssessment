@@ -94,7 +94,7 @@ public class AI : MonoBehaviour
     private AgentActions _agentActions;
 
     //script reference of class containing all the functions to use in the behaviour tree
-    private BehaviourTreeFunctions _behaviourTreeFunctions;
+    private BehaviourSubTrees _behaviourSubTrees;
 
 
     // Use this for initialization
@@ -107,7 +107,7 @@ public class AI : MonoBehaviour
         _agentInventory = GetComponentInChildren<InventoryController>();
 
         //find behaviour tree functions script in game scene
-        _behaviourTreeFunctions = GameObject.FindFirstObjectByType<BehaviourTreeFunctions>();
+        _behaviourSubTrees = GameObject.FindFirstObjectByType<BehaviourSubTrees>();
     }
 
     // Update is called once per frame
