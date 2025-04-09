@@ -1,6 +1,8 @@
 ﻿using System.Collections.Generic;
 using UnityEngine;
 
+using BehaviourTree;
+
 /*****************************************************************************************************************************
  * Write your core AI code in this file here. The private variable 'agentScript' contains all the agents actions which are listed
  * below. Ensure your code it clear and organised and commented.
@@ -81,39 +83,33 @@ using UnityEngine;
 ///
 /// See the assessment brief for more details
 /// </summary>
-public class AI : MonoBehaviour
+public class AI : BehaviourTree.Tree
 {
     // Gives access to important data about the AI agent (see above)
-    private AgentData _agentData;
+    public static AgentData _agentData;
     // Gives access to the agent senses
-    private Sensing _agentSenses;
+    public static Sensing _agentSenses;
     // gives access to the agents inventory
-    private InventoryController _agentInventory;
+    public static InventoryController _agentInventory;
     // This is the script containing the AI agents actions
     // e.g. agentScript.MoveTo(enemy);
-    private AgentActions _agentActions;
+    public static AgentActions _agentActions;
 
-    //script reference of class containing all the functions to use in the behaviour tree
-    private BehaviourSubTrees _behaviourSubTrees;
-
+    //non script references
+    public static GameObject targetEnemy;
 
     // Use this for initialization
-    void Start()
+    void Awake()
     {
         // Initialise the accessable script components
         _agentData = GetComponent<AgentData>();
         _agentActions = GetComponent<AgentActions>();
         _agentSenses = GetComponentInChildren<Sensing>();
         _agentInventory = GetComponentInChildren<InventoryController>();
-
-        //find behaviour tree functions script in game scene
-        _behaviourSubTrees = GameObject.FindFirstObjectByType<BehaviourSubTrees>();
     }
 
-    // Update is called once per frame
-    void Update()
+    protected override Node SetupTree()
     {
-        // Run your AI code in here
-
+        return null;
     }
 }

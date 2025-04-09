@@ -4,19 +4,6 @@ using UnityEngine;
 
 public class BehaviourSubTrees : MonoBehaviour
 {
-    //new classes used in behaviour tree functions
-
-    private class GameObjectWithDistance
-    {
-        public GameObject gameObject;
-        public float distance;
-        public GameObjectWithDistance(GameObject _gameObject, float _distance)
-        {
-            gameObject = _gameObject;
-            distance = _distance;
-        }
-    }
-
     //enemy functions
 
     public bool CheckForEnemies()
