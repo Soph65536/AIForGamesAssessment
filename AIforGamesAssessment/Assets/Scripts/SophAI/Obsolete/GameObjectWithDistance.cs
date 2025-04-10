@@ -1,7 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
+[Obsolete]
 //this class is used to store a gamebject along with how far away it is from the AI
 public class GameObjectWithDistance
 {

@@ -10,7 +10,7 @@ namespace BehaviourTree
         private Node rootNode = null;
 
         // Start is called before the first frame update
-        protected void Start()
+        protected virtual void Start()
         {
             rootNode = SetupTree();
         }

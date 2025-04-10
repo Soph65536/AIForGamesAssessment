@@ -19,6 +19,8 @@ namespace BehaviourTree
 
         protected NodeState state;
 
+        public AI owner; //the tree that owns this node
+
         public Node parent; //the parent node of this node
         protected List<Node> children = new List<Node>(); //the children nodes of this node
 
@@ -28,15 +30,26 @@ namespace BehaviourTree
 
         //constructors
 
-        //creates the node without being attached to any aprent or children
+        //creates the node without a parent or owner tree
         public Node()
         {
+            owner = null;
+            parent = null;
+        }
+
+        //creates the node without being attached to any parent or children
+        public Node(AI ownerTree)
+        {
+            owner = ownerTree;
+
             parent = null;
         }
 
         //creates the node with the nodes in children attached to it as its children
-        public Node(List<Node> children)
+        public Node(AI ownerTree, List<Node> children)
         {
+            owner = ownerTree;
+
             foreach (Node childNode in children)
             {
                 AttachChild(childNode);
@@ -59,6 +72,19 @@ namespace BehaviourTree
 
 
         //shared data methods
+
+        //get root node
+        public Node GetRootNode()
+        {
+            Node parentNode = parent;
+
+            while (parentNode.parent != null)
+            {
+                parentNode = parentNode.parent;
+            }
+
+            return parentNode;
+        }
 
         //set shared data to new value
         public void SetData(string key, object value)
@@ -124,7 +150,8 @@ namespace BehaviourTree
     {
         //set constructors to same as parent
         public Sequence() : base() { }
-        public Sequence(List<Node> children) : base(children) { }
+        public Sequence(AI ownerTree) : base(ownerTree) { }
+        public Sequence(AI ownerTree, List<Node> children) : base(ownerTree, children) { }
 
         public override NodeState Evaluate()
         {
@@ -165,7 +192,8 @@ namespace BehaviourTree
     {
         //set constructors to same as parent
         public Selector() : base() { }
-        public Selector(List<Node> children) : base(children) { }
+        public Selector(AI ownerTree) : base(ownerTree) { }
+        public Selector(AI ownerTree, List<Node> children) : base(ownerTree, children) { }
 
         public override NodeState Evaluate()
         {

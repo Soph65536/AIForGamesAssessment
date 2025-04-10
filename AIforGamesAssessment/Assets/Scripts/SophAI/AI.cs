@@ -86,30 +86,79 @@ using BehaviourTree;
 public class AI : BehaviourTree.Tree
 {
     // Gives access to important data about the AI agent (see above)
-    public static AgentData _agentData;
+    public AgentData _agentData;
     // Gives access to the agent senses
-    public static Sensing _agentSenses;
+    public Sensing _agentSenses;
     // gives access to the agents inventory
-    public static InventoryController _agentInventory;
+    public InventoryController _agentInventory;
     // This is the script containing the AI agents actions
     // e.g. agentScript.MoveTo(enemy);
-    public static AgentActions _agentActions;
-
-    //non script references
-    public static GameObject targetEnemy;
+    public AgentActions _agentActions;
 
     // Use this for initialization
-    void Awake()
+    protected override void Start()
     {
         // Initialise the accessable script components
         _agentData = GetComponent<AgentData>();
         _agentActions = GetComponent<AgentActions>();
         _agentSenses = GetComponentInChildren<Sensing>();
         _agentInventory = GetComponentInChildren<InventoryController>();
+
+        base.Start();
     }
 
     protected override Node SetupTree()
     {
-        return null;
+        Node root = null;
+
+
+        if(gameObject.name == Names.BlueTeamMember1 ||
+            gameObject.name == Names.RedTeamMember1)
+        {
+            //Member 1 of team is Offense AI
+            root = new Selector(this, new List<Node>
+            {
+                new Sequence(this, new List<Node>
+                {
+                    new CheckForEnemiesInView(this),
+                    new SetClosestEnemyAsTarget(this, transform),
+                    new AttackAnEnemy(this)
+                }),
+
+                new MoveToRandomLocation(this)
+            });
+        }
+
+        else if(gameObject.name == Names.BlueTeamMember2 ||
+            gameObject.name == Names.RedTeamMember2)
+        {
+            //Member 2 of team is Defense/Support AI
+            root = new Selector(this, new List<Node>
+            {
+                new Sequence(this, new List<Node>
+                {
+                    new TryFindHealthKit(this),
+                    new Selector(this, new List<Node>
+                    {
+                        new HealOthers(this),
+                        new HealSelf(this)
+                    })
+                }),
+
+                new MoveToRandomLocation(this)
+            });
+        }
+
+        else
+        {
+            //Member 3 of team is All Rounder AI
+            root = new Selector(this, new List<Node>
+            {
+                new MoveToRandomLocation(this)
+            });
+        }
+
+
+        return root;
     }
 }
