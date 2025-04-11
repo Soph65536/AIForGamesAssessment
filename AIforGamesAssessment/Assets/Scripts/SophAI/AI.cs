@@ -95,6 +95,12 @@ public class AI : BehaviourTree.Tree
     // e.g. agentScript.MoveTo(enemy);
     public AgentActions _agentActions;
 
+    //vars used in nodes
+    public int lowHealth = 15;
+    public int canReceiveHealHealth = 50;
+    public int canUseHealHealth = 90;
+    public float maxFlagDistanceFromBase = 2;
+
     // Use this for initialization
     protected override void Start()
     {

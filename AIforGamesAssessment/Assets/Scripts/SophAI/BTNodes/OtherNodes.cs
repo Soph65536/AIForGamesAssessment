@@ -101,7 +101,7 @@ public class HealSelf : Node
         GameObject healthKit = owner._agentInventory.GetItem(Names.HealthKit);
 
         //if no health kit or health > maxheath - healamount then can't heal self
-        if (healthKit == null || owner._agentData.CurrentHitPoints > 90)
+        if (healthKit == null || owner._agentData.CurrentHitPoints > owner.canUseHealHealth)
         {
             state = NodeState.FAILURE;
             Debug.Log("HealSelf FAILURE");
@@ -145,7 +145,7 @@ public class HealOthers : Node
         }
 
         //this is set to the highest health number that a friend could have whilst still needing to be healed
-        int lowestFriendHealth = 50;
+        int lowestFriendHealth = owner.canReceiveHealHealth;
         GameObject friendToHeal = null;
 
         foreach (GameObject friend in friendlies)
@@ -262,7 +262,8 @@ public class TryForFriendlyFlag : Node
 
         //if friendly flag is within range of friendly base then return failure
         //since it's already at base and doesn't want picking up
-        if (Vector3.Distance(friendlyFlag.transform.position, owner._agentData.FriendlyBase.transform.position) < 2)
+        if (Vector3.Distance(friendlyFlag.transform.position, owner._agentData.FriendlyBase.transform.position) 
+            < owner.maxFlagDistanceFromBase)
         {
             state = NodeState.FAILURE;
             Debug.Log("TryForFriendlyFlag FAILURE, already at base");
@@ -307,7 +308,8 @@ public class TryForEnemyFlag : Node
 
         //if enemy flag is within range of enemy base then return failure
         //since it's already at base and doesn't want picking up
-        if (Vector3.Distance(enemyFlag.transform.position, owner._agentData.FriendlyBase.transform.position) < 2)
+        if (Vector3.Distance(enemyFlag.transform.position, owner._agentData.FriendlyBase.transform.position) 
+            < owner.maxFlagDistanceFromBase)
         {
             state = NodeState.FAILURE;
             Debug.Log("TryForEnemyFlag FAILURE, already at base");
@@ -350,7 +352,8 @@ public class BringFlagsToBase : Node
 
         if (blueFlag != null && 
             owner._agentInventory.HasItem(Names.BlueFlag) &&
-            Vector3.Distance(owner.transform.position, owner._agentData.FriendlyBase.transform.position) < 2)
+            Vector3.Distance(owner.transform.position, owner._agentData.FriendlyBase.transform.position) 
+            < owner.maxFlagDistanceFromBase)
         {
             //if has blue flag drop it at base
             owner._agentActions.DropItem(blueFlag);
