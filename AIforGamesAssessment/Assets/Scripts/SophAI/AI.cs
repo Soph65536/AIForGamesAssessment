@@ -118,13 +118,105 @@ public class AI : BehaviourTree.Tree
             //Member 1 of team is Offense AI
             root = new Selector(this, new List<Node>
             {
+                //if has a flag try returning it to base
+                new BringFlagsToBase(this),
+
+                //if has health kit try healing others, then self
+                new HealOthers(this),
+                new HealSelf(this),
+
+                //if objects in view
                 new Sequence(this, new List<Node>
                 {
-                    new CheckForEnemiesInView(this),
-                    new SetClosestEnemyAsTarget(this, transform),
-                    new AttackAnEnemy(this)
+                    new CheckForObjectsInView(this),
+                    new Selector(this, new List<Node>
+                    {
+                        //if low health
+                        new Sequence(this, new List<Node>
+                        {
+                            new CheckForLowHealth(this),
+                            new Selector(this, new List<Node>
+                            {
+                                //try find health kit
+                                new Sequence(this, new List<Node>
+                                {
+                                    new TryFindHealthKit(this),
+                                    new HealSelf(this)
+                                }),
+
+                                //otherwise try find flags and try bring to base
+                                //try find both flags and bring to base
+                                new Sequence(this, new List<Node>
+                                {
+                                    new TryForFriendlyFlag(this),
+                                    new TryForEnemyFlag(this),
+                                    new BringFlagsToBase(this),
+                                }),
+                                //try find friendly flag and bring to base
+                                new Sequence(this, new List<Node>
+                                {
+                                    new TryForFriendlyFlag(this),
+                                    new BringFlagsToBase(this),
+                                }),
+                                //try find enemy flag and bring to base
+                                new Sequence(this, new List<Node>
+                                {
+                                    new TryForEnemyFlag(this),
+                                    new BringFlagsToBase(this),
+                                }),
+
+                                //otherwise flee from enemies
+                                new FleeFromEnemies(this),
+
+                                //otherwise if no enemies then just run to base
+                                new MoveToBase(this)
+                            })
+                        }),
+
+                        //else try for flags
+                        //try find both flags and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForFriendlyFlag(this),
+                            new TryForEnemyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+                        //try find friendly flag and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForFriendlyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+                        //try find enemy flag and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForEnemyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+
+                        //else if enemies
+                        new Sequence(this, new List<Node>
+                        {
+                            new CheckForEnemiesInView(this),
+                            
+                            //set enemy target
+                            new Selector(this, new List<Node>
+                            {
+                                new CheckEnemiesForFriendlyFlag(this),
+                                new CheckEnemiesForEnemyFlag(this),
+                                new SetClosestEnemyAsTarget(this, transform)
+                            }),
+
+                            //attack target enemy
+                            new AttackAnEnemy(this)
+                        }),
+
+                        //else try for powerup
+                        new TryForPowerup(this),
+                    })
                 }),
 
+                //else move to random location
                 new MoveToRandomLocation(this)
             });
         }
@@ -135,16 +227,87 @@ public class AI : BehaviourTree.Tree
             //Member 2 of team is Defense/Support AI
             root = new Selector(this, new List<Node>
             {
+                //if has a flag try returning it to base
+                new BringFlagsToBase(this),
+
+                //if has health kit try healing others, then self
+                new HealOthers(this),
+                new HealSelf(this),
+
+                //if objects in view
                 new Sequence(this, new List<Node>
                 {
-                    new TryFindHealthKit(this),
+                    new CheckForObjectsInView(this),
                     new Selector(this, new List<Node>
                     {
-                        new HealOthers(this),
-                        new HealSelf(this)
+                        //if low health
+                        new Sequence(this, new List<Node>
+                        {
+                            new CheckForLowHealth(this),
+                            new Selector(this, new List<Node>
+                            {
+                                //try find health kit
+                                new Sequence(this, new List<Node>
+                                {
+                                    new TryFindHealthKit(this),
+                                    new HealSelf(this)
+                                }),
+
+                                //otherwise flee from enemies
+                                new FleeFromEnemies(this),
+
+                                //otherwise if no enemies then just run to base
+                                new MoveToBase(this)
+                            })
+                        }),
+
+                        //else try for flags
+                        //try find both flags and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForFriendlyFlag(this),
+                            new TryForEnemyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+                        //try find friendly flag and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForFriendlyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+                        //try find enemy flag and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForEnemyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+
+                        //else try heal others
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryFindHealthKit(this),
+                            new HealOthers(this)
+                        }),
+
+                        //else if enemies
+                        new Sequence(this, new List<Node>
+                        {
+                            new CheckForEnemiesInView(this),
+                            
+                            //set enemy target (defense only attacks enemy if they have a flag)
+                            new Selector(this, new List<Node>
+                            {
+                                new CheckEnemiesForFriendlyFlag(this),
+                                new CheckEnemiesForEnemyFlag(this),
+                            }),
+
+                            //attack target enemy
+                            new AttackAnEnemy(this)
+                        })
                     })
                 }),
 
+                //else move to random location
                 new MoveToRandomLocation(this)
             });
         }
@@ -154,6 +317,82 @@ public class AI : BehaviourTree.Tree
             //Member 3 of team is All Rounder AI
             root = new Selector(this, new List<Node>
             {
+                //if has a flag try returning it to base
+                new BringFlagsToBase(this),
+
+                //if has health kit try healing others, then self
+                new HealOthers(this),
+                new HealSelf(this),
+
+                //if objects in view
+                new Sequence(this, new List<Node>
+                {
+                    new CheckForObjectsInView(this),
+                    new Selector(this, new List<Node>
+                    {
+                        //if low health
+                        new Sequence(this, new List<Node>
+                        {
+                            new CheckForLowHealth(this),
+                            new Selector(this, new List<Node>
+                            {
+                                //try find health kit
+                                new Sequence(this, new List<Node>
+                                {
+                                    new TryFindHealthKit(this),
+                                    new HealSelf(this)
+                                }),
+
+                                //otherwise flee from enemies
+                                new FleeFromEnemies(this),
+
+                                //otherwise if no enemies then just run to base
+                                new MoveToBase(this)
+                            })
+                        }),
+
+                        //else try for flags
+                        //try find both flags and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForFriendlyFlag(this),
+                            new TryForEnemyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+                        //try find friendly flag and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForFriendlyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+                        //try find enemy flag and bring to base
+                        new Sequence(this, new List<Node>
+                        {
+                            new TryForEnemyFlag(this),
+                            new BringFlagsToBase(this),
+                        }),
+
+                        //else if enemies
+                        new Sequence(this, new List<Node>
+                        {
+                            new CheckForEnemiesInView(this),
+                            
+                            //set enemy target (all rouner just attacks any enemy it sees)
+                            new Selector(this, new List<Node>
+                            {
+                                new SetClosestEnemyAsTarget(this, transform)
+                            }),
+
+                            //attack target enemy
+                            new AttackAnEnemy(this)
+                        }),
+
+                        //else try for powerup
+                        new TryForPowerup(this),
+                    })
+                }),
+
+                //else move to random location
                 new MoveToRandomLocation(this)
             });
         }

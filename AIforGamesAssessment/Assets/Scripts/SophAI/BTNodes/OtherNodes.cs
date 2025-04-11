@@ -98,16 +98,15 @@ public class HealSelf : Node
     public override NodeState Evaluate()
     {
         //get gameobject ref to healthkit in inventory
-        GameObject healthKit = owner._agentSenses.GetObjectInViewByName(Names.HealthKit);
+        GameObject healthKit = owner._agentInventory.GetItem(Names.HealthKit);
 
-        //if no health kit then can't heal self
-        if (!owner._agentInventory.HasItem(Names.HealthKit) || healthKit == null)
+        //if no health kit or health > maxheath - healamount then can't heal self
+        if (healthKit == null || owner._agentData.CurrentHitPoints > 90)
         {
             state = NodeState.FAILURE;
             Debug.Log("HealSelf FAILURE");
             return state;
         }
-
 
         //heal self
         owner._agentActions.UseItem(healthKit);
@@ -124,10 +123,10 @@ public class HealOthers : Node
     public override NodeState Evaluate()
     {
         //get gameobject ref to healthkit in inventory
-        GameObject healthKit = owner._agentSenses.GetObjectInViewByName(Names.HealthKit);
+        GameObject healthKit = owner._agentInventory.GetItem(Names.HealthKit);
 
-        //if no health kit then can't heal self
-        if (!owner._agentInventory.HasItem(Names.HealthKit) || healthKit == null)
+        //if no health kit then can't heal people
+        if (healthKit == null)
         {
             state = NodeState.FAILURE;
             Debug.Log("HealOthers FAILURE");
@@ -241,64 +240,92 @@ public class TryForPowerup : Node
     }
 }
 
-public class TryForBlueFlag : Node
+public class TryForFriendlyFlag : Node
 {
-    public TryForBlueFlag(AI ownerTree) : base(ownerTree) { }
+    private string friendlyFlagName; //name of whatever flag is friendly flag
+
+    public TryForFriendlyFlag(AI ownerTree) : base(ownerTree) { }
 
     public override NodeState Evaluate()
     {
-        GameObject blueFlag = owner._agentSenses.GetObjectInViewByName(Names.BlueFlag);
+        //set friendly flag name based on owner tag
+        friendlyFlagName = owner.tag == Tags.BlueTeam ? Names.BlueFlag : Names.RedFlag;
 
-        if (blueFlag == null)
+        GameObject friendlyFlag = owner._agentSenses.GetObjectInViewByName(friendlyFlagName);
+
+        if (friendlyFlag == null)
         {
             state = NodeState.FAILURE;
-            Debug.Log("TryForBlueFlag FAILURE");
+            Debug.Log("TryForFriendlyFlag FAILURE");
             return state;
         }
 
-        if (owner._agentSenses.IsItemInReach(blueFlag))
+        //if friendly flag is within range of friendly base then return failure
+        //since it's already at base and doesn't want picking up
+        if (Vector3.Distance(friendlyFlag.transform.position, owner._agentData.FriendlyBase.transform.position) < 2)
         {
-            owner._agentActions.CollectItem(blueFlag);
-            state = NodeState.SUCCESS;
-            Debug.Log("TryForBlueFlag SUCCESS");
+            state = NodeState.FAILURE;
+            Debug.Log("TryForFriendlyFlag FAILURE, already at base");
             return state;
         }
 
-        owner._agentActions.MoveTo(blueFlag);
+        if (owner._agentSenses.IsItemInReach(friendlyFlag))
+        {
+            owner._agentActions.CollectItem(friendlyFlag);
+            state = NodeState.SUCCESS;
+            Debug.Log("TryForFriendlyFlag SUCCESS");
+            return state;
+        }
+
+        owner._agentActions.MoveTo(friendlyFlag);
 
         state = NodeState.RUNNING;
-        Debug.Log("TryForBlueFlag RUNNING");
+        Debug.Log("TryForFriendlyFlag RUNNING");
         return state;
     }
 }
 
-public class TryForRedFlag : Node
+public class TryForEnemyFlag : Node
 {
-    public TryForRedFlag(AI ownerTree) : base(ownerTree) { }
+    private string enemyFlagName; //name of whatever flag is enemy flag
+
+    public TryForEnemyFlag(AI ownerTree) : base(ownerTree) { }
 
     public override NodeState Evaluate()
     {
-        GameObject redFlag = owner._agentSenses.GetObjectInViewByName(Names.RedFlag);
+        //set enemy flag name based on AITag
+        enemyFlagName = owner.tag == Tags.BlueTeam ? Names.RedFlag : Names.BlueFlag;
 
-        if (redFlag == null)
+        GameObject enemyFlag = owner._agentSenses.GetObjectInViewByName(enemyFlagName);
+
+        if (enemyFlag == null)
         {
             state = NodeState.FAILURE;
-            Debug.Log("TryForRedFlag FAILURE");
+            Debug.Log("TryForEnemyFlag FAILURE");
             return state;
         }
 
-        if (owner._agentSenses.IsItemInReach(redFlag))
+        //if enemy flag is within range of enemy base then return failure
+        //since it's already at base and doesn't want picking up
+        if (Vector3.Distance(enemyFlag.transform.position, owner._agentData.FriendlyBase.transform.position) < 2)
         {
-            owner._agentActions.CollectItem(redFlag);
-            state = NodeState.SUCCESS;
-            Debug.Log("TryForRedFlag SUCCESS");
+            state = NodeState.FAILURE;
+            Debug.Log("TryForEnemyFlag FAILURE, already at base");
             return state;
         }
 
-        owner._agentActions.MoveTo(redFlag);
+        if (owner._agentSenses.IsItemInReach(enemyFlag))
+        {
+            owner._agentActions.CollectItem(enemyFlag);
+            state = NodeState.SUCCESS;
+            Debug.Log("TryForEnemyFlag SUCCESS");
+            return state;
+        }
+
+        owner._agentActions.MoveTo(enemyFlag);
 
         state = NodeState.RUNNING;
-        Debug.Log("TryForRedFlag RUNNING");
+        Debug.Log("TryForEnemyFlag RUNNING");
         return state;
     }
 }
@@ -309,22 +336,11 @@ public class BringFlagsToBase : Node
 
     public override NodeState Evaluate()
     {
-        if (!owner._agentData.HasFriendlyFlag && !owner._agentData.HasEnemyFlag)
-        {
-            //doesn't have any flag so failure
-            state = NodeState.FAILURE;
-            Debug.Log("BringFlagsToBase FAILURE");
-            return state;
-        }
-
-        //go to base
-        owner._agentActions.MoveTo(owner._agentData.FriendlyBase);
-
         //get gameobject refs for flags
-        GameObject blueFlag = owner._agentSenses.GetObjectInViewByName(Names.BlueFlag);
-        GameObject redFlag = owner._agentSenses.GetObjectInViewByName(Names.RedFlag);
+        GameObject blueFlag = owner._agentInventory.GetItem(Names.BlueFlag);
+        GameObject redFlag = owner._agentInventory.GetItem(Names.RedFlag);
 
-        if(blueFlag == null && redFlag == null)
+        if (blueFlag == null && redFlag == null)
         {
             //doesn't have any flag so failure
             state = NodeState.FAILURE;
@@ -333,21 +349,32 @@ public class BringFlagsToBase : Node
         }
 
         if (blueFlag != null && 
-            owner._agentInventory.HasItem(Names.BlueFlag))
+            owner._agentInventory.HasItem(Names.BlueFlag) &&
+            Vector3.Distance(owner.transform.position, owner._agentData.FriendlyBase.transform.position) < 2)
         {
             //if has blue flag drop it at base
             owner._agentActions.DropItem(blueFlag);
+            state = NodeState.SUCCESS;
+            Debug.Log("BringFlagsToBase SUCCESS");
+            return state;
         }
 
         if (redFlag != null &&
-            owner._agentInventory.HasItem(Names.RedFlag))
+            owner._agentInventory.HasItem(Names.RedFlag) &&
+            Vector3.Distance(owner.transform.position, owner._agentData.FriendlyBase.transform.position) < 2)
         {
             //if has red flag drop it at base
             owner._agentActions.DropItem(redFlag);
+            state = NodeState.SUCCESS;
+            Debug.Log("BringFlagsToBase SUCCESS");
+            return state;
         }
 
-        state = NodeState.SUCCESS;
-        Debug.Log("BringFlagsToBase SUCCESS");
+        //go to base
+        owner._agentActions.MoveTo(owner._agentData.FriendlyBase);
+
+        state = NodeState.RUNNING;
+        Debug.Log("BringFlagsToBase RUNNING");
         return state;
     }
 }
